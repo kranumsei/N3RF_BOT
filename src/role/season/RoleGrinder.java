@@ -15,6 +15,10 @@ public class RoleGrinder {
 		RegistradorPontosDB.createTable();	
 	}
 
+	public RoleGrinder() {
+		
+	}
+	
 	public RoleGrinder(GuildVoiceLeaveEvent e) {
 		this.id = e.getMember().getUser().getId();
 		this.name = e.getMember().getUser().getName();
@@ -36,6 +40,10 @@ public class RoleGrinder {
 	
 	public void alterarLeave() {
 		RegistradorPontosDB.alteraRegistroLeave(this.id);
+	}
+	
+	public String ranking() {
+		return RegistradorPontosDB.ordenarRanking();
 	}
 	
 	

@@ -31,12 +31,10 @@ public class RegistradorPontosDB {
 			ps.execute();
 			System.out.println("Adicionar executado.");
 			ps.close();
-
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 	
 	public static void alteraRegistroJoin(String id) {
@@ -118,20 +116,6 @@ public class RegistradorPontosDB {
 		}
 		return false;
 	}
-
-//	public static boolean tableExists() {
-//		String sql = "SELECT ID FROM CONTA LIMIT 1";
-//		try {
-//			Statement stmt = registradorPontosDB().createStatement();
-//			ResultSet res = stmt.executeQuery(sql);
-//			if(res.next()) {
-//				return true;	
-//			}
-//		} catch (SQLException e) {
-//			e.printStackTrace();
-//		}
-//		return false;
-//	}
 	
 	public static void createTable() {
 		String sql = "CREATE TABLE CONTA(ID VARCHAR(200) NOT NULL, NOME VARCHAR(200) NOT NULL, PONTOSTOTAIS LONG NOT NULL, PONTOSTEMP LONG NOT NULL, PRIMARY KEY (ID))";
@@ -143,6 +127,25 @@ public class RegistradorPontosDB {
 		} catch (SQLException e) {
 			
 		}
+	}
+	
+	public static String ordenarRanking() {
+		String sql = "SELECT * FROM CONTA ORDER BY PONTOSTOTAIS + 0 DESC";
+		String resposta = "";
+		try {
+			Statement stmt = registradorPontosDB().createStatement();
+			ResultSet res = stmt.executeQuery(sql);
+			while (res.next()) {
+				String nome = res.getString("NOME");
+				String pontos = res.getString("PONTOSTOTAIS");
+				resposta = resposta + nome+" ------ "+pontos+"\n";
+			 }
+			res.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return resposta;
 	}
 	
 	// TRATA AS CONEXOES COM O DB
