@@ -19,6 +19,7 @@ public class Connection {
 			e.printStackTrace();
 		}
 
+		
 		IdentificaEvento resposta = new IdentificaEvento();
 		// LookForWrongPlacedCommands watcher = new LookForWrongPlacedCommands();
 		discord.addEventListener(resposta);

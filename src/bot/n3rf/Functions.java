@@ -180,11 +180,13 @@ public class Functions {
 		if (!voiceChatJoinEvent.getMember().getUser().isBot()) {
 			String name = voiceChatJoinEvent.getMember().getUser().getName();
 			RoleGrinder registro = new RoleGrinder(voiceChatJoinEvent);
-			if (registro.exists()) {
-				registro.alterarJoin();
-			} else {
-				registro.adicionarReg();
-			}
+			//if (registro.exists()) {
+				registro.salvarPontos();
+				registro.alterarModificadoresNovaRoom();
+				registro.iniciarContagem();
+			//} else {
+			//	registro.adicionarReg();
+			//}
 
 			log.logWriter(dataAtual + name + " se juntou ao chat de voz " + voiceChatJoinEvent.getChannelJoined().getName());
 			System.out.println(dataAtual + voiceChatJoinEvent.getMember().getUser().getName() + " se juntou ao chat de voz "
@@ -198,11 +200,12 @@ public class Functions {
 		if (!voiceChatLeaveEvent.getMember().getUser().isBot()) {
 			String name = voiceChatLeaveEvent.getMember().getUser().getName();
 			RoleGrinder registro = new RoleGrinder(voiceChatLeaveEvent);
-			if (registro.exists()) {
-				registro.alterarLeave();
-			} else {
-				registro.adicionarReg();
-			}
+			//if (registro.exists()) {
+				registro.salvarPontos();
+				registro.alterarModificadoresNovaRoom();
+			//} else {
+			//	registro.adicionarReg();
+			//}
 
 			log.logWriter(dataAtual + name + " saiu do chat de voz " + voiceChatLeaveEvent.getChannelLeft().getName());
 			System.out.println(dataAtual + voiceChatLeaveEvent.getMember().getUser().getName() + " saiu do chat de voz "
@@ -214,6 +217,15 @@ public class Functions {
 		calendar = Calendar.getInstance();
 		String dataAtual = "(" + calendar.getTime() + ") ";
 		if (!voiceChatMoveEvent.getMember().getUser().isBot()) {
+			RoleGrinder registro = new RoleGrinder(voiceChatMoveEvent);
+			//if (registro.exists()) {
+				registro.salvarPontos();
+				registro.alterarModificadoresAntigaRoom();
+				registro.alterarModificadoresNovaRoom();
+				registro.iniciarContagem();
+//			} else {
+//				registro.adicionarReg();
+//			}
 			log.logWriter(dataAtual + voiceChatMoveEvent.getMember().getUser().getName() + " se juntou ao chat de voz "
 					+ voiceChatMoveEvent.getChannelJoined().getName());
 			System.out.println(dataAtual + voiceChatMoveEvent.getMember().getUser().getName() + " se juntou ao chat de voz "

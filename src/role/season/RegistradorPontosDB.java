@@ -24,8 +24,8 @@ public class RegistradorPontosDB {
 		return null;
 	}
 
-	public static void adicionaRegistro(String id, String nome, long pontosTotais, long pontosAtuais) {
-		String sql = "INSERT INTO CONTA (ID, NOME, PONTOSTOTAIS, PONTOSTEMP) VALUES ('" + id + "', '" + nome + "', '" + pontosTotais + "', '"+pontosAtuais+"')";
+	public static void adicionaNovoRegistro(String id, String nome, long pontosTotais, long pontosAtuais) {
+		String sql = "INSERT INTO CONTA (ID, NOME, PONTOSTOTAIS, PONTOSTEMP, MODIFIER) VALUES ('" + id + "', '" + nome + "', '" + pontosTotais + "', '"+pontosAtuais+"', '0')";
 		try {
 			PreparedStatement ps = registradorPontosDB().prepareStatement(sql);
 			ps.execute();
@@ -37,7 +37,7 @@ public class RegistradorPontosDB {
 		}
 	}
 	
-	public static void alteraRegistroJoin(String id) {
+	public static void atualizarPontosTemp(String id) {
 		String sql = "UPDATE CONTA SET PONTOSTEMP = '"+(System.currentTimeMillis()/1000)+"' WHERE ID = '"+id+"'";
 		try {
 			PreparedStatement ps = registradorPontosDB().prepareStatement(sql);
@@ -50,9 +50,9 @@ public class RegistradorPontosDB {
 		}
 	}
 	
-	public static void alteraRegistroLeave(String id) {
+	public static void atualizarPontosTotais(String id) {
 		long pontosTotais = calculaPontosTotais(id);
-		long pontosAtuais = calculaPontosAtuais(id);
+		long pontosAtuais = getPontosAtuais(id);
 		if(pontosAtuais != 0) {
 			String sql = "UPDATE CONTA SET PONTOSTOTAIS = '"+pontosTotais+"', PONTOSTEMP = '0' WHERE ID = '"+id+"'";
 			try {
@@ -68,33 +68,74 @@ public class RegistradorPontosDB {
 			return;
 		}
 	}
-
+	
+	
 	public static long calculaPontosTotais(String id) {
+		int modificador = getModifier(id);
 		long pontuacaoInicial = 0;
 		long pontuacaoTotal = 0;
+		long result;
 		String sql = "SELECT C.PONTOSTOTAIS, C.PONTOSTEMP  FROM CONTA C WHERE ID = " + id;
 		try {
 			Statement stmt = registradorPontosDB().createStatement();
 			ResultSet res = stmt.executeQuery(sql);
-			res.next();
-			pontuacaoInicial = res.getLong("PONTOSTEMP");
-			pontuacaoTotal = res.getLong("PONTOSTOTAIS");
+			if(res.next()) {
+				pontuacaoInicial = res.getLong("PONTOSTEMP");
+				pontuacaoTotal = res.getLong("PONTOSTOTAIS");
+			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		long result = pontuacaoTotal + (System.currentTimeMillis()/1000 - pontuacaoInicial);
+		if(modificador == 2) {
+			result = pontuacaoTotal + (((System.currentTimeMillis()/1000) - pontuacaoInicial)/30);
+		}else if(modificador == 3) {
+			result = pontuacaoTotal + (((System.currentTimeMillis()/1000) - pontuacaoInicial)/20);
+		}else if(modificador == 4){
+			result = pontuacaoTotal + (((System.currentTimeMillis()/1000) - pontuacaoInicial)/10);
+		}else {
+			result = pontuacaoTotal + (((System.currentTimeMillis()/1000) - pontuacaoInicial)/60);
+		}
 		return result;
 	}
 	
-	public static long calculaPontosAtuais(String id) {
+	public static void setModifier(String id, int modificador) {
+		String sql = "UPDATE CONTA SET MODIFIER = '"+modificador+"' WHERE ID = '"+id+"'";
+		try {
+			PreparedStatement ps = registradorPontosDB().prepareStatement(sql);
+			ps.execute();
+			ps.close();
+
+		} catch (SQLException e) {
+			
+		}
+	}
+	
+	public static int getModifier(String id) {
+		int modificador = 1;
+		String sql = "SELECT C.MODIFIER  FROM CONTA C WHERE ID = " + id;
+		try {
+			Statement stmt = registradorPontosDB().createStatement();
+			ResultSet res = stmt.executeQuery(sql);
+			if(res.next()) {
+				modificador = res.getInt("MODIFIER");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return modificador;
+	}
+	
+	public static long getPontosAtuais(String id) {
 		long pontuacaoInicial = 0;
 		String sql = "SELECT C.PONTOSTEMP  FROM CONTA C WHERE ID = " + id;
 		try {
 			Statement stmt = registradorPontosDB().createStatement();
 			ResultSet res = stmt.executeQuery(sql);
-			res.next();
-			pontuacaoInicial = res.getLong("PONTOSTEMP");
+			if(res.next()) {
+				pontuacaoInicial = res.getLong("PONTOSTEMP");
+			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -118,7 +159,7 @@ public class RegistradorPontosDB {
 	}
 	
 	public static void createTable() {
-		String sql = "CREATE TABLE CONTA(ID VARCHAR(200) NOT NULL, NOME VARCHAR(200) NOT NULL, PONTOSTOTAIS LONG NOT NULL, PONTOSTEMP LONG NOT NULL, PRIMARY KEY (ID))";
+		String sql = "CREATE TABLE CONTA(ID VARCHAR(200) NOT NULL, NOME VARCHAR(200) NOT NULL, PONTOSTOTAIS LONG NOT NULL, PONTOSTEMP LONG NOT NULL, MODIFIER INT NOT NULL, PRIMARY KEY (ID))";
 		try {
 			PreparedStatement ps = registradorPontosDB().prepareStatement(sql);
 			ps.execute();
