@@ -2,10 +2,14 @@ package role.season;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
+import bot.n3rf.VariaveisConfiguraveis;
 import net.dv8tion.jda.core.entities.Game;
 import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceMoveEvent;
@@ -14,9 +18,12 @@ public class RoleGrinder {
 	private String id;
 	private String name;
 	private VoiceChannel afkRoom;
+	private Role admins;
 	private boolean isAfk;
+	private Member membroAtual;
 	private List<Member> listaUsuarios;
 	private List<Member> listaUsuarios2;
+
 	// private String name;
 	// AQUI VEM TODAS AS OPERAÇOES E MECANICAS DE PONTE
 	public RoleGrinder(GuildVoiceJoinEvent e) {
@@ -24,13 +31,24 @@ public class RoleGrinder {
 		this.name = e.getMember().getUser().getName();
 		this.afkRoom = e.getGuild().getAfkChannel();
 		this.listaUsuarios = e.getChannelJoined().getMembers();
+		this.admins = e.getGuild().getRoles().get(1);
+		this.membroAtual = e.getMember();
 		if (e.getChannelJoined().equals(this.afkRoom)) {
 			this.isAfk = true;
 		} else {
 			this.isAfk = false;
 		}
 		// this.name = e.getMember().getUser().getName();
-		RegistradorPontosDB.createTable();
+		// MembroDAO.createTable();
+	}
+
+	public RoleGrinder(GuildMemberJoinEvent e) {
+		this.id = e.getMember().getUser().getId();
+		this.name = e.getMember().getUser().getName();
+		this.afkRoom = e.getGuild().getAfkChannel();
+		this.admins = e.getGuild().getRoles().get(1);
+		this.membroAtual = e.getMember();
+		// MembroDAO.createTable();
 	}
 
 	public RoleGrinder(GuildVoiceMoveEvent e) {
@@ -39,12 +57,14 @@ public class RoleGrinder {
 		this.afkRoom = e.getGuild().getAfkChannel();
 		this.listaUsuarios = e.getChannelJoined().getMembers();
 		this.listaUsuarios2 = e.getChannelLeft().getMembers();
+		this.admins = e.getGuild().getRoles().get(1);
+		this.membroAtual = e.getMember();
 		if (e.getChannelJoined().equals(this.afkRoom)) {
 			this.isAfk = true;
 		} else {
 			this.isAfk = false;
 		}
-		RegistradorPontosDB.createTable();
+		// MembroDAO.createTable();
 	}
 
 	public RoleGrinder() {
@@ -55,36 +75,52 @@ public class RoleGrinder {
 		this.id = e.getMember().getUser().getId();
 		this.name = e.getMember().getUser().getName();
 		this.listaUsuarios = e.getChannelLeft().getMembers();
-		RegistradorPontosDB.createTable();
+		this.admins = e.getGuild().getRoles().get(1);
+		this.membroAtual = e.getMember();
+		// MembroDAO.createTable();
 
 	}
 
 	public boolean exists(String id) {
-		return RegistradorPontosDB.exists(id);
+		return MembroDAO.exists(id);
 	}
 
 	public void adicionarReg() {
-			RegistradorPontosDB.adicionaNovoRegistro(this.id, this.name, 0, System.currentTimeMillis() / 1000);
+		MembroDAO.adicionaNovoRegistro(this.id, this.name);
 	}
 
 	public void salvarPontos() {
-		RegistradorPontosDB.atualizarPontosTotais(this.id);
-		RegistradorPontosDB.atualizarPontosTemp(this.id);
-		for (int i = 0; i < listaUsuarios.size(); i++) {
-			if(exists(listaUsuarios.get(i).getUser().getId())) {
-				RegistradorPontosDB.atualizarPontosTotais(listaUsuarios.get(i).getUser().getId());	
-			}else {
-				RegistradorPontosDB.adicionaNovoRegistro(listaUsuarios.get(i).getUser().getId(), listaUsuarios.get(i).getUser().getName(), 0, System.currentTimeMillis() / 1000);
+		// RegistradorPontosDB.atualizarPontosTemp(this.id);
+		if (!membroAtual.isOwner() && !membroAtual.getRoles().get(0).getName().equals("Legendary")) {
+			for (int i = 0; i < listaUsuarios.size(); i++) {
+				if (exists(listaUsuarios.get(i).getUser().getId()) && !listaUsuarios.get(i).getUser().isBot()
+						&& !listaUsuarios.get(i).isOwner()
+						&& !listaUsuarios.get(i).getRoles().get(0).getName().equals(admins.getName())) {
+					MembroDAO.atualizarPontosTotais(listaUsuarios.get(i).getUser().getId());
+					MembroDAO.atualizarPontosTemp(listaUsuarios.get(i).getUser().getId(), Long.parseLong("0"));
+
+				}else if (!exists(listaUsuarios.get(i).getUser().getId()) && !listaUsuarios.get(i).getUser().isBot()
+						&& !listaUsuarios.get(i).isOwner()
+						&& !listaUsuarios.get(i).getRoles().get(0).getName().equals(admins.getName())) {
+					MembroDAO.adicionaNovoRegistro(listaUsuarios.get(i).getUser().getId(), listaUsuarios.get(i).getUser().getName());
+				}
+
 			}
+			MembroDAO.atualizarPontosTotais(this.id);
 		}
-		
 	}
 
 	public void alterarModificadoresAntigaRoom() {
-		if(isAfk() == false) {
-			if (listaUsuarios2.size() == 1) {
-				RegistradorPontosDB.setModifier(listaUsuarios2.get(0).getUser().getId(), 1);
-			} else if (listaUsuarios2.size() >= 2) {
+		if (isAfk() == false) {
+			int botQuantity = 0;
+			for(int i = 0; i < listaUsuarios2.size(); i++) {
+				if(listaUsuarios2.get(i).getUser().isBot()) {
+					botQuantity++;
+				}
+			}
+			if (listaUsuarios2.size() - botQuantity == 1) {
+				MembroDAO.setModifier(listaUsuarios2.get(0).getUser().getId(), 1);
+			} else if (listaUsuarios2.size() - botQuantity >= 2) {
 				boolean jogandoMesmoJogo = false;
 				ArrayList<String> listaJogadores = new ArrayList<>();
 				for (int x = 0; x < listaUsuarios2.size(); x++) {
@@ -104,29 +140,35 @@ public class RoleGrinder {
 						}
 					}
 				}
-				if (listaUsuarios2.size() == 2) {
-					for (int i = 0; i < listaUsuarios2.size(); i++) {
-						RegistradorPontosDB.setModifier(listaUsuarios2.get(i).getUser().getId(), 2);
-					}
-				} else if (listaUsuarios2.size() > 2) {
-					for (int i = 0; i < listaUsuarios2.size(); i++) {
-						RegistradorPontosDB.setModifier(listaUsuarios2.get(i).getUser().getId(), 3);
-					}
-				}
 				if (jogandoMesmoJogo == true) {
 					for (int i = 0; i < listaJogadores.size(); i++) {
-						RegistradorPontosDB.setModifier(listaJogadores.get(i), 4);
+						MembroDAO.setModifier(listaJogadores.get(i), 4);
+					}
+				}else if (listaUsuarios2.size() - botQuantity == 2) {
+					for (int i = 0; i < listaUsuarios2.size(); i++) {
+						MembroDAO.setModifier(listaUsuarios2.get(i).getUser().getId(), 2);
+					}
+				} else if (listaUsuarios2.size() - botQuantity > 2) {
+					for (int i = 0; i < listaUsuarios2.size(); i++) {
+						MembroDAO.setModifier(listaUsuarios2.get(i).getUser().getId(), 3);
 					}
 				}
+				
 			}
 		}
 	}
-	
+
 	public void alterarModificadoresNovaRoom() {
-		if(isAfk() == false) {
-			if (listaUsuarios.size() == 1) {
-				RegistradorPontosDB.setModifier(listaUsuarios.get(0).getUser().getId(), 1);
-			} else if (listaUsuarios.size() >= 2) {
+		if (isAfk() == false) {
+			int botQuantity = 0;
+			for(int i = 0; i < listaUsuarios.size(); i++) {
+				if(listaUsuarios.get(i).getUser().isBot()) {
+					botQuantity++;
+				}
+			}
+			if (listaUsuarios.size() - botQuantity == 1) {
+				MembroDAO.setModifier(listaUsuarios.get(0).getUser().getId(), 1);
+			} else if (listaUsuarios.size() - botQuantity >= 2) {
 				boolean jogandoMesmoJogo = false;
 				ArrayList<String> listaJogadores = new ArrayList<>();
 				for (int x = 0; x < listaUsuarios.size(); x++) {
@@ -147,20 +189,20 @@ public class RoleGrinder {
 						}
 					}
 				}
-				if (listaUsuarios.size() == 2) {
-					for (int i = 0; i < listaUsuarios.size(); i++) {
-						RegistradorPontosDB.setModifier(listaUsuarios.get(i).getUser().getId(), 2);
-					}
-				} else if (listaUsuarios.size() > 2) {
-					for (int i = 0; i < listaUsuarios.size(); i++) {
-						RegistradorPontosDB.setModifier(listaUsuarios.get(i).getUser().getId(), 3);
-					}
-				}
 				if (jogandoMesmoJogo == true) {
 					for (int i = 0; i < listaJogadores.size(); i++) {
-						RegistradorPontosDB.setModifier(listaJogadores.get(i), 4);
+						MembroDAO.setModifier(listaJogadores.get(i), 4);
+					}
+				}else if (listaUsuarios.size() - botQuantity == 2) {
+					for (int i = 0; i < listaUsuarios.size(); i++) {
+						MembroDAO.setModifier(listaUsuarios.get(i).getUser().getId(), 2);
+					}
+				} else if (listaUsuarios.size() - botQuantity > 2) {
+					for (int i = 0; i < listaUsuarios.size(); i++) {
+						MembroDAO.setModifier(listaUsuarios.get(i).getUser().getId(), 3);
 					}
 				}
+				
 			}
 		}
 	}
@@ -169,21 +211,47 @@ public class RoleGrinder {
 		if (isAfk() == false) {
 			for (int i = 0; i < listaUsuarios.size(); i++) {
 				if (!isAfk()) {
-					RegistradorPontosDB.atualizarPontosTemp(listaUsuarios.get(i).getUser().getId());
+					MembroDAO.atualizarPontosTemp(listaUsuarios.get(i).getUser().getId(),
+							System.currentTimeMillis() / 1000);
 				} else {
-					RegistradorPontosDB.atualizarPontosTotais(this.id);
+					MembroDAO.atualizarPontosTotais(this.id);
 				}
 			}
 		}
 	}
 
+	public ArrayList<ArrayList<Long>> definirCargos() {
+		Stack<Long> pilha = MembroDAO.rankingStack();
+
+		ArrayList<ArrayList<Long>> ids = new ArrayList<>();
+		if (ids.size() == 0) {
+			ArrayList<Long> epics = new ArrayList<>();
+			ids.add(epics);
+			while (ids.get(0).size() < VariaveisConfiguraveis.numEpics && !pilha.isEmpty()) {
+				ids.get(0).add(pilha.pop());
+			}
+		}
+		if (ids.size() == 1 && !pilha.isEmpty()) {
+			ArrayList<Long> rares = new ArrayList<>();
+			ids.add(rares);
+			while (ids.get(1).size() < VariaveisConfiguraveis.numRares && !pilha.isEmpty()) {
+				ids.get(1).add(pilha.pop());
+			}
+		}
+
+		return ids;
+	}
+
+	public void resetRanking() {
+		MembroDAO.resetRanking();
+	}
+
 	public String ranking() {
-		return RegistradorPontosDB.ordenarRanking();
+		return MembroDAO.ordenarRanking();
 	}
 
 	public boolean isAfk() {
 		if (this.isAfk == true) {
-			System.out.println("AFK Channel joined.");
 			return true;
 		} else {
 			return false;

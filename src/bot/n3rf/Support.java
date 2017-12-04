@@ -12,15 +12,14 @@ public class Support {
 		data.append(day+"/"+month+"/"+year);
 		return data.toString();
 	}
-	
+
 	
 	public String formatarCargos(String s, int numeroCargos) {
 		StringBuilder retorno = new StringBuilder();
 		String[] temp = s.split(",", numeroCargos);
 		
 		for(int i = 0; i < temp.length; i++) {
-			temp[i] = temp[i].substring(3);
-			System.out.println(temp[i].toString());
+			temp[i] = temp[i].substring(3);	
 			String[] temp2  = temp[i].split("\\(");
 			temp[i] = temp2[0];
 		}

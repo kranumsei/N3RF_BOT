@@ -1,8 +1,15 @@
 package bot.n3rf;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+//import java.util.List;
 import java.util.Random;
 
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.entities.Role;
+//import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent;
@@ -26,7 +33,7 @@ public class Functions {
 	private GuildMemberRoleAddEvent roleAddEvent;
 	private GuildVoiceDeafenEvent voiceDeafenEvent;
 	private Support supp = new Support();
-	//private String name = messageEvent.getAuthor().getName();
+	// private String name = messageEvent.getAuthor().getName();
 	private Calendar calendar;
 	private LogGenerator log = new LogGenerator();
 
@@ -34,23 +41,23 @@ public class Functions {
 	public Functions(MessageReceivedEvent e) {
 		this.messageEvent = e;
 	}
-	
+
 	public Functions(GuildVoiceDeafenEvent e) {
 		this.voiceDeafenEvent = e;
 	}
-	
+
 	public Functions(GuildVoiceJoinEvent e) {
 		this.voiceChatJoinEvent = e;
 	}
-	
+
 	public Functions(GuildVoiceLeaveEvent e) {
 		this.voiceChatLeaveEvent = e;
 	}
-	
+
 	public Functions(GuildVoiceMoveEvent e) {
 		this.voiceChatMoveEvent = e;
 	}
-	
+
 	public Functions(GuildMemberRoleAddEvent e) {
 		this.roleAddEvent = e;
 	}
@@ -66,7 +73,51 @@ public class Functions {
 	public Functions(GuildMemberRoleRemoveEvent e) {
 		this.roleRemoveEvent = e;
 	}
-	
+
+	public void atribuirCargos() {
+		Guild server = messageEvent.getGuild();
+		RoleGrinder rg = new RoleGrinder();
+		Role epic = messageEvent.getGuild().getRoles().get(VariaveisConfiguraveis.posicaoEpic);
+		Role rare = messageEvent.getGuild().getRoles().get(VariaveisConfiguraveis.posicaoRare);
+		Role common = messageEvent.getGuild().getRoles().get(VariaveisConfiguraveis.posicaoCommon);
+		List<Member> demotedEpics = server.getMembersWithRoles(epic);
+		List<Member> demotedRares = server.getMembersWithRoles(rare);
+		ArrayList<ArrayList<Long>> ids = rg.definirCargos();
+		if (ids.get(1).size() < VariaveisConfiguraveis.numRares
+				|| ids.get(0).size() < VariaveisConfiguraveis.numEpics) {
+			messageEvent.getChannel().sendMessage("Não possui gente o suficiente para eu atribuir cargos.").queue();
+			return;
+		}
+		for (int y = 0; y < demotedEpics.size(); y++) {
+			if (!demotedEpics.isEmpty()) {
+				messageEvent.getGuild().getController().modifyMemberRoles(demotedEpics.get(y), common).queue();
+			} else {
+				break;
+			}
+		}
+		for (int z = 0; z < demotedRares.size(); z++) {
+			if (!demotedRares.isEmpty()) {
+				messageEvent.getGuild().getController().modifyMemberRoles(demotedRares.get(z), common).queue();
+			} else {
+				break;
+			}
+		}
+		for (int i = 0; i < ids.size(); i++) {
+			for (int x = 0; x < ids.get(i).size(); x++) {
+				Member membroAtual = server.getMemberById(ids.get(i).get(x));
+				if (i == 0) {
+					messageEvent.getGuild().getController().modifyMemberRoles(membroAtual, epic).queue();
+				}
+				if (i == 1) {
+					messageEvent.getGuild().getController().modifyMemberRoles(membroAtual, rare).queue();
+				}
+			}
+		}
+		rg.resetRanking();
+		messageEvent.getTextChannel().sendMessage("Cargos atribuidos.").queue();
+
+	}
+
 	public void limparComando() {
 		calendar = Calendar.getInstance();
 		String dataAtual = "(" + calendar.getTime() + ") ";
@@ -91,7 +142,7 @@ public class Functions {
 
 	public void displayRanking() {
 		RoleGrinder rg = new RoleGrinder();
-		messageEvent.getTextChannel().sendMessage(rg.ranking()).queue();
+		messageEvent.getTextChannel().sendMessage("Ranking:\n" + rg.ranking()).queue();
 	}
 
 	public void whoIs() {
@@ -121,19 +172,22 @@ public class Functions {
 	public void entrouNoServer() {
 		calendar = Calendar.getInstance();
 		String dataAtual = "(" + calendar.getTime() + ") ";
+		RoleGrinder rg = new RoleGrinder(guildJoinEvent);
+		rg.adicionarReg();
 		log.logWriter("\n" + dataAtual + guildJoinEvent.getUser().getName() + " entrou no server "
-				+ messageEvent.getGuild().getName() + " em " + messageEvent.getMember().getJoinDate() + "\n");
+				+ guildJoinEvent.getGuild().getName() + " em " + guildJoinEvent.getMember().getJoinDate() + "\n");
 
-		messageEvent.getGuild().getController()
-				.addRolesToMember(messageEvent.getMember(), messageEvent.getGuild().getRolesByName("Common", true))
+		guildJoinEvent.getGuild().getController()
+				.addRolesToMember(guildJoinEvent.getMember(), guildJoinEvent.getGuild().getRolesByName("Common", true))
 				.queue();
 
 		System.out.println("\n" + guildJoinEvent.getUser().getName() + " entrou no server "
-				+ messageEvent.getGuild().getName() + "\n");
+				+ guildJoinEvent.getGuild().getName() + "\n");
 		sendPrivateMessage(guildJoinEvent.getUser(),
-				"Bem-vindo ao " + messageEvent.getGuild().getName() + ". Duvidas? Fale com algum moderador.");
-		sendPrivateMessage(messageEvent.getGuild().getOwner().getUser(), messageEvent.getMember().getUser().getName()
-				+ " entrou no server " + messageEvent.getGuild().getName());
+				"Bem-vindo ao " + guildJoinEvent.getGuild().getName() + ". Duvidas? Fale com algum moderador.");
+		sendPrivateMessage(guildJoinEvent.getGuild().getOwner().getUser(),
+				guildJoinEvent.getMember().getUser().getName() + " entrou no server "
+						+ guildJoinEvent.getGuild().getName());
 	}
 
 	public void saiuDoServer() {
@@ -165,32 +219,33 @@ public class Functions {
 	public void cargoAdicionado() {
 		calendar = Calendar.getInstance();
 		String dataAtual = "(" + calendar.getTime() + ") ";
-		log.logWriter(dataAtual + roleAddEvent.getMember().getUser().getName() + " teve uma role adicionada no servidor "
-				+ roleAddEvent.getGuild().getName() + ". Suas roles agora são "
-				+ supp.formatarCargos(roleAddEvent.getMember().getRoles().toString(), roleAddEvent.getMember().getRoles().size()));
+		log.logWriter(dataAtual + roleAddEvent.getMember().getUser().getName()
+				+ " teve uma role adicionada no servidor " + roleAddEvent.getGuild().getName()
+				+ ". Suas roles agora são " + supp.formatarCargos(roleAddEvent.getMember().getRoles().toString(),
+						roleAddEvent.getMember().getRoles().size()));
 
 		System.out.println(roleAddEvent.getMember().getUser().getName() + " teve uma role adicionada no servidor "
-				+ roleAddEvent.getGuild().getName() + ". Suas roles agora são "
-				+ supp.formatarCargos(roleAddEvent.getMember().getRoles().toString(), roleAddEvent.getMember().getRoles().size()));
+				+ roleAddEvent.getGuild().getName() + ". Suas roles agora são " + supp.formatarCargos(
+						roleAddEvent.getMember().getRoles().toString(), roleAddEvent.getMember().getRoles().size()));
+
 	}
-	
+
 	public void entrouChatVoz() {
 		calendar = Calendar.getInstance();
 		String dataAtual = "(" + calendar.getTime() + ") ";
 		if (!voiceChatJoinEvent.getMember().getUser().isBot()) {
 			String name = voiceChatJoinEvent.getMember().getUser().getName();
 			RoleGrinder registro = new RoleGrinder(voiceChatJoinEvent);
-			//if (registro.exists()) {
+			if (!voiceChatJoinEvent.getMember().getUser().isBot()) {
 				registro.salvarPontos();
 				registro.alterarModificadoresNovaRoom();
 				registro.iniciarContagem();
-			//} else {
-			//	registro.adicionarReg();
-			//}
-
-			log.logWriter(dataAtual + name + " se juntou ao chat de voz " + voiceChatJoinEvent.getChannelJoined().getName());
-			System.out.println(dataAtual + voiceChatJoinEvent.getMember().getUser().getName() + " se juntou ao chat de voz "
-					+ voiceChatJoinEvent.getChannelJoined().getName() + " no servidor " + voiceChatJoinEvent.getGuild().getName());
+			}
+			log.logWriter(
+					dataAtual + name + " se juntou ao chat de voz " + voiceChatJoinEvent.getChannelJoined().getName());
+			System.out.println(dataAtual + voiceChatJoinEvent.getMember().getUser().getName()
+					+ " se juntou ao chat de voz " + voiceChatJoinEvent.getChannelJoined().getName() + " no servidor "
+					+ voiceChatJoinEvent.getGuild().getName());
 		}
 	}
 
@@ -200,50 +255,51 @@ public class Functions {
 		if (!voiceChatLeaveEvent.getMember().getUser().isBot()) {
 			String name = voiceChatLeaveEvent.getMember().getUser().getName();
 			RoleGrinder registro = new RoleGrinder(voiceChatLeaveEvent);
-			//if (registro.exists()) {
-				registro.salvarPontos();
-				registro.alterarModificadoresNovaRoom();
-			//} else {
-			//	registro.adicionarReg();
-			//}
+			registro.salvarPontos();
+			registro.alterarModificadoresNovaRoom();
 
 			log.logWriter(dataAtual + name + " saiu do chat de voz " + voiceChatLeaveEvent.getChannelLeft().getName());
 			System.out.println(dataAtual + voiceChatLeaveEvent.getMember().getUser().getName() + " saiu do chat de voz "
-					+ voiceChatLeaveEvent.getChannelLeft().getName() + " no servidor " + voiceChatLeaveEvent.getGuild().getName());
+					+ voiceChatLeaveEvent.getChannelLeft().getName() + " no servidor "
+					+ voiceChatLeaveEvent.getGuild().getName());
 		}
 	}
-	
+
 	public void mudouChatVoz() {
 		calendar = Calendar.getInstance();
 		String dataAtual = "(" + calendar.getTime() + ") ";
 		if (!voiceChatMoveEvent.getMember().getUser().isBot()) {
 			RoleGrinder registro = new RoleGrinder(voiceChatMoveEvent);
-			//if (registro.exists()) {
-				registro.salvarPontos();
-				registro.alterarModificadoresAntigaRoom();
-				registro.alterarModificadoresNovaRoom();
-				registro.iniciarContagem();
-//			} else {
-//				registro.adicionarReg();
-//			}
+			// if (registro.exists()) {
+			registro.salvarPontos();
+			registro.alterarModificadoresAntigaRoom();
+			registro.alterarModificadoresNovaRoom();
+			registro.iniciarContagem();
+			// } else {
+			// registro.adicionarReg();
+			// }
 			log.logWriter(dataAtual + voiceChatMoveEvent.getMember().getUser().getName() + " se juntou ao chat de voz "
 					+ voiceChatMoveEvent.getChannelJoined().getName());
-			System.out.println(dataAtual + voiceChatMoveEvent.getMember().getUser().getName() + " se juntou ao chat de voz "
-					+ voiceChatMoveEvent.getChannelJoined().getName() + " no servidor " + voiceChatMoveEvent.getGuild().getName());
+			System.out.println(dataAtual + voiceChatMoveEvent.getMember().getUser().getName()
+					+ " se juntou ao chat de voz " + voiceChatMoveEvent.getChannelJoined().getName() + " no servidor "
+					+ voiceChatMoveEvent.getGuild().getName());
 		}
 	}
 
 	public void mutadoEsurdecido() {
 		if (!voiceDeafenEvent.getMember().getUser().isBot()) {
 			if (voiceDeafenEvent.getMember().getVoiceState().isSelfDeafened()) {
+				// voiceDeafenEvent.getGuild().getController().moveVoiceMember(voiceDeafenEvent.getMember(),
+				// voiceDeafenEvent.getGuild().getVoiceChannelById("254091864565612547")).queue();
 				voiceDeafenEvent.getGuild().getController()
-						.moveVoiceMember(voiceDeafenEvent.getMember(), voiceDeafenEvent.getGuild().getVoiceChannelById("254091864565612547")).queue();
+						.moveVoiceMember(voiceDeafenEvent.getMember(), voiceDeafenEvent.getGuild().getAfkChannel())
+						.queue();
 			} else {
 
 			}
 		}
 	}
-	
+
 	private void sendPrivateMessage(User user, String content) {
 		user.openPrivateChannel().queue((channel) -> {
 			channel.sendMessage(content).queue();
@@ -253,5 +309,31 @@ public class Functions {
 	private void deleteMessage() {
 		messageEvent.getChannel().deleteMessageById(messageEvent.getMessageId()).queue();
 
+	}
+
+	public void setNumEpics() {
+		int numEpics = Integer.parseInt(messageEvent.getMessage().getContent().split(" ")[1]);
+		if (numEpics >= 1 && numEpics <= 5) {
+			VariaveisConfiguraveis.numEpics = numEpics;
+			messageEvent.getChannel()
+					.sendMessage("Setado com sucesso, o numro total de epicos ao atribuir cargos será de "
+							+ VariaveisConfiguraveis.numEpics)
+					.queue();
+		} else {
+			messageEvent.getChannel().sendMessage("Valor invalido, para epicos escolha um valos de 1 a 5").queue();
+		}
+	}
+
+	public void setNumRares() {
+		int numRares = Integer.parseInt(messageEvent.getMessage().getContent().split(" ")[1]);
+		if (numRares >= 5 && numRares <= 10) {
+			VariaveisConfiguraveis.numRares = numRares;
+			messageEvent.getChannel()
+					.sendMessage("Setado com sucesso, o numro total de raros ao atribuir cargos será de "
+							+ VariaveisConfiguraveis.numRares)
+					.queue();
+		} else {
+			messageEvent.getChannel().sendMessage("Valor invalido, para raros escolha um valor de 5 a 10").queue();
+		}
 	}
 }

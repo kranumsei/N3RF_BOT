@@ -1,6 +1,5 @@
 package bot.n3rf;
 
-
 import java.util.Random;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent;
@@ -25,26 +24,30 @@ public class IdentificaEvento extends ListenerAdapter {
 		String message = e.getMessage().getContent();
 		String name = e.getAuthor().getName();
 		String response = "";
-		if ((message.startsWith("!!!") || message.startsWith("-") || message.startsWith("'"))
-				&& !(e.getTextChannel().getName().equals("commands"))) {
+		if ((message.startsWith("!!!") || message.startsWith("-")) && !e.getTextChannel().getName().equals("commands")) {
+		//if(e.getMessage().getAuthor().isBot()) {
 			funcao.limparComando();
 		} else if (name.equals("Jads1")) {
 			Random rand = new Random();
 			int rng = rand.nextInt(100 + 1);
 			if (rng == 9) {
-				response = "CALA BOCA GORDÃO";
+				response = "Cala boca, Jads!";
 				e.getTextChannel().sendMessage(response).queue();
 			}
 		} else if (message.equals("'flipCoin")) {
 			funcao.flipCoin();
 		}else if (message.startsWith("'ranking")) {
 			funcao.displayRanking();
-		} else if (message.startsWith("'whois ")) {
+		} else if (message.startsWith("'whois")) {
 			funcao.whoIs();
-
+		}else if (message.equals("'atribuirCargos") && (e.getMember().getRoles().get(0).getName().equals(e.getGuild().getRoles().get(0).getName()) || e.getMember().getRoles().get(0).getName().equals(e.getGuild().getRoles().get(1).getName()))) {
+			funcao.atribuirCargos();
+		}else if(message.startsWith("'setNumEpics ") && (e.getMember().getRoles().get(0).getName().equals(e.getGuild().getRoles().get(0).getName()) || e.getMember().getRoles().get(0).getName().equals(e.getGuild().getRoles().get(1).getName()))) {
+			funcao.setNumEpics();
+		}else if(message.startsWith("'setNumRares ") && (e.getMember().getRoles().get(0).getName().equals(e.getGuild().getRoles().get(0).getName()) || e.getMember().getRoles().get(0).getName().equals(e.getGuild().getRoles().get(1).getName()))) {
+			funcao.setNumRares();
 		}
 	}
-
 
 	public void onGuildMemberJoin(GuildMemberJoinEvent e) {
 		Functions funcao = new Functions(e);
@@ -58,13 +61,21 @@ public class IdentificaEvento extends ListenerAdapter {
 
 	// ATT LOG E AVISA NO CONSOLE QUANDO ALGUEM TEM CARGO REMOVIDO
 	public void onGuildMemberRoleRemove(GuildMemberRoleRemoveEvent e) {
-		Functions funcao = new Functions(e);
-		funcao.cargoRemovido();
+		if(e.getMember().getUser().isBot() == false) {
+			Functions funcao = new Functions(e);
+			try {
+			funcao.cargoRemovido();
+			}catch(StringIndexOutOfBoundsException exception) {
+				
+			}
+		}
 	}
 
 	public void onGuildMemberRoleAdd(GuildMemberRoleAddEvent e) {
-		Functions funcao = new Functions(e);
-		funcao.cargoAdicionado();
+		if(e.getMember().getUser().isBot() == false) {
+			Functions funcao = new Functions(e);
+			funcao.cargoAdicionado();
+		}
 	}
 
 	// ATT LOG E AVISA NO CONSOLE QUANDO ALGUEM SE CONECTA A UM CHAT DE VOZ NO

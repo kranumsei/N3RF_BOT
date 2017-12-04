@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Stack;
+
 import bot.n3rf.Constants;
 
 
@@ -68,8 +70,7 @@ public class RegistradorPontosDB {
 			return;
 		}
 	}
-	
-	
+		
 	public static long calculaPontosTotais(String id) {
 		int modificador = getModifier(id);
 		long pontuacaoInicial = 0;
@@ -112,7 +113,7 @@ public class RegistradorPontosDB {
 	}
 	
 	public static int getModifier(String id) {
-		int modificador = 1;
+		int modificador = -1;
 		String sql = "SELECT C.MODIFIER  FROM CONTA C WHERE ID = " + id;
 		try {
 			Statement stmt = registradorPontosDB().createStatement();
@@ -125,6 +126,22 @@ public class RegistradorPontosDB {
 			e.printStackTrace();
 		}
 		return modificador;
+	}
+	
+	public static int getPontosTotais(String id) {
+		int pTotais = -1;
+		String sql = "SELECT C.PONTOSTOTAIS FROM CONTA C WHERE ID = " + id;
+		try {
+			Statement stmt = registradorPontosDB().createStatement();
+			ResultSet res = stmt.executeQuery(sql);
+			if(res.next()) {
+				pTotais = res.getInt("MODIFIER");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return pTotais;
 	}
 	
 	public static long getPontosAtuais(String id) {
@@ -158,6 +175,18 @@ public class RegistradorPontosDB {
 		return false;
 	}
 	
+	public static void resetRanking() {
+		String sql = "DELETE FROM CONTA";
+		try {
+			PreparedStatement ps = registradorPontosDB().prepareStatement(sql);
+			ps.execute();
+			ps.close();
+
+		} catch (SQLException e) {
+			
+		}
+	}
+	
 	public static void createTable() {
 		String sql = "CREATE TABLE CONTA(ID VARCHAR(200) NOT NULL, NOME VARCHAR(200) NOT NULL, PONTOSTOTAIS LONG NOT NULL, PONTOSTEMP LONG NOT NULL, MODIFIER INT NOT NULL, PRIMARY KEY (ID))";
 		try {
@@ -180,6 +209,24 @@ public class RegistradorPontosDB {
 				String nome = res.getString("NOME");
 				String pontos = res.getString("PONTOSTOTAIS");
 				resposta = resposta + nome+" ------ "+pontos+"\n";
+			 }
+			res.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return resposta;
+	}
+	
+	public static Stack<Long> rankingStack() {
+		String sql = "SELECT ID FROM CONTA ORDER BY PONTOSTOTAIS + 0 ASC";
+		Stack<Long> resposta = new Stack<>();
+		try {
+			Statement stmt = registradorPontosDB().createStatement();
+			ResultSet res = stmt.executeQuery(sql);
+			while (res.next()) {
+				long id = res.getLong("ID");
+				resposta.push(id);
 			 }
 			res.close();
 		} catch (SQLException e) {
